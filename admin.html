@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRSH Admin Dashboard</title>
+
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#f4f4f4;
+  padding:20px;
+}
+
+.container{
+  max-width:1000px;
+  margin:auto;
+  background:white;
+  padding:20px;
+  border-radius:10px;
+}
+
+h1{
+  text-align:center;
+}
+
+.stats{
+  font-size:20px;
+  margin-bottom:20px;
+  font-weight:bold;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  margin-bottom:15px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  border:1px solid #ddd;
+  padding:10px;
+}
+
+th{
+  background:black;
+  color:white;
+}
+
+button{
+  padding:8px 12px;
+  border:none;
+  background:red;
+  color:white;
+  border-radius:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>TRSH Admin Dashboard</h1>
+
+<div class="stats">
+Total Entries: <span id="totalEntries">0</span>
+</div>
+
+<input
+type="text"
+id="search"
+placeholder="Search entries..."
+>
+
+<table>
+
+<thead>
+<tr>
+<th>Name</th>
+<th>Surname</th>
+<th>Centre</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="entriesTable"></tbody>
+
+</table>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+getDocs,
+deleteDoc,
+doc
+}
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "trsh-raffle.firebaseapp.com",
+  projectId: "trsh-raffle",
+  storageBucket: "trsh-raffle.firebasestorage.app",
+  messagingSenderId: "415646638643",
+  appId: "1:415646638643:web:35ea07e88f153a35b8f946"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const table = document.getElementById("entriesTable");
+const totalEntries = document.getElementById("totalEntries");
+
+let allEntries = [];
+
+async function loadEntries(){
+
+table.innerHTML="";
+
+const snapshot = await getDocs(
+collection(db,"raffleEntries")
+);
+
+allEntries=[];
+
+snapshot.forEach((entry)=>{
+
+const data=entry.data();
+
+allEntries.push({
+id:entry.id,
+...data
+});
+
+});
+
+renderEntries(allEntries);
+
+totalEntries.textContent=allEntries.length;
+
+}
+
+function renderEntries(entries){
+
+table.innerHTML="";
+
+entries.forEach((entry)=>{
+
+table.innerHTML+=`
+<tr>
+<td>${entry.name}</td>
+<td>${entry.surname}</td>
+<td>${entry.centre}</td>
+<td>
+<button onclick="deleteEntry('${entry.id}')">
+Delete
+</button>
+</td>
+</tr>
+`;
+
+});
+
+}
+
+window.deleteEntry = async(id)=>{
+
+if(!confirm("Delete this entry?")) return;
+
+await deleteDoc(
+doc(db,"raffleEntries",id)
+);
+
+loadEntries();
+
+};
+
+document
+.getElementById("search")
+.addEventListener("input",(e)=>{
+
+const term=e.target.value.toLowerCase();
+
+const filtered=allEntries.filter(entry=>
+
+entry.name.toLowerCase().includes(term) ||
+entry.surname.toLowerCase().includes(term) ||
+entry.centre.toLowerCase().includes(term)
+
+);
+
+renderEntries(filtered);
+
+});
+
+loadEntries();
+
+</script>
+
+</body>
+</html>
