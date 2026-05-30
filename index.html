@@ -1,42 +1,18 @@
-<div class="container">
-
-  <h1>TRSH  Raffle</h1>
-
-  <form id="raffleForm">
-
-    <input type="text" id="name" placeholder="Name" required>
-
-    <input type="text" id="surname" placeholder="Surname" required>
-
-    <input type="text" id="centre" placeholder="Spiritual Centre" required>
-
-    <button type="submit">Submit Entry</button>
-
-  </form>
-
-  <table>
-
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Surname</th>
-        <th>Spiritual Centre</th>
-      </tr>
-    </thead>
-
-    <tbody id="raffleTable"></tbody>
-
-  </table>
-
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRSH Raffle</title>
 
 <style>
-
 body{
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background:#f4f4f4;
   padding:20px;
-}.container{
+}
+
+.container{
   max-width:700px;
   margin:auto;
   background:white;
@@ -55,6 +31,7 @@ input{
   margin-top:10px;
   border:1px solid #ccc;
   border-radius:5px;
+  box-sizing:border-box;
 }
 
 button{
@@ -66,14 +43,17 @@ button{
   border:none;
   border-radius:5px;
   font-size:16px;
+  cursor:pointer;
 }
+
 table{
   width:100%;
   margin-top:30px;
   border-collapse:collapse;
 }
 
-table th, table td{
+table th,
+table td{
   border:1px solid #ddd;
   padding:10px;
 }
@@ -83,6 +63,34 @@ table th{
   color:white;
 }
 </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>TRSH Raffle</h1>
+
+  <form id="raffleForm">
+    <input type="text" id="name" placeholder="Name" required>
+    <input type="text" id="surname" placeholder="Surname" required>
+    <input type="text" id="centre" placeholder="Spiritual Centre" required>
+
+    <button type="submit">Submit Entry</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Surname</th>
+        <th>Spiritual Centre</th>
+      </tr>
+    </thead>
+    <tbody id="raffleTable"></tbody>
+  </table>
+
+</div>
 
 <script type="module">
 
@@ -93,23 +101,22 @@ import {
   collection,
   addDoc,
   getDocs
-} 
-from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-  
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyCGoNFcHxWMCOYp7rS3i9SPZ52kb9IDv_g",
   authDomain: "trsh-raffle.firebaseapp.com",
-  databaseURL: "https://trsh-raffle-default-rtdb.firebaseio.com",
   projectId: "trsh-raffle",
-  storageBuckect: "trsh-raffle.firebasestorage.app",
+  storageBucket: "trsh-raffle.firebasestorage.app",
   messagingSenderId: "415646638643",
   appId: "1:415646638643:web:35ea07e88f153a35b8f946",
   measurementId: "G-KB5VD9ZNHG"
 };
+
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const form = document.getElementById("raffleForm");
-
 const table = document.getElementById("raffleTable");
 
 async function loadEntries() {
@@ -132,7 +139,6 @@ async function loadEntries() {
       </tr>
     `;
   });
-
 }
 
 loadEntries();
@@ -141,41 +147,38 @@ form.addEventListener("submit", async (e) => {
 
   e.preventDefault();
 
-  const name = document.getElementById("name").value;
+  try {
 
-  const surname = document.getElementById("surname").value;
+    const name = document.getElementById("name").value;
+    const surname = document.getElementById("surname").value;
+    const centre = document.getElementById("centre").value;
 
-  const centre = document.getElementById("centre").value;
+    await addDoc(
+      collection(db, "raffleEntries"),
+      {
+        name,
+        surname,
+        centre,
+        entryId: "TRSH-" + Date.now(),
+        createdAt: new Date().toISOString()
+      }
+    );
 
-  await addDoc(
-  collection(db, "raffleEntries"),
-  {
-    name,
-    surname,
-    centre,
-    entryId: "TRSH-" + Date.now(),
-    createdAt: new Date().toISOString()
+    await loadEntries();
+
+    form.reset();
+
+    alert("Entry submitted successfully!");
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert("Error: " + error.message);
   }
- );
-
-  loadEntries();
-
-  form.reset();
-alert("Entry submitted successfully!");
-
 });
 
-<script>
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCGoNFcHxWMCOYp7rS3i9SPZ52kb9IDv_g",
-  authDomain: "trsh-raffle.firebaseapp.com",
-  databaseURL: "https://trsh-raffle-default-rtdb.firebaseio.com",
-  projectId: "trsh-raffle",
-  storageBucket: "trsh-raffle.firebasestorage.app",
-  messagingSenderId: "415646638643",
-  appId: "1:415646638643:web:35ea07e88f153a35b8f946",
-  measurementId: "G-KB5DV9ZNHG"
-};
-
 </script>
+
+</body>
+</html>
