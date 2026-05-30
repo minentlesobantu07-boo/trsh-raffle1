@@ -3,180 +3,231 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TRSH Raffle</title>
+<title>TRSH Admin Dashboard</title>
 
 <style>
 body{
-  font-family: Arial, sans-serif;
+  font-family:Arial,sans-serif;
   background:#f4f4f4;
   padding:20px;
 }
 
 .container{
-  max-width:700px;
+  max-width:1000px;
   margin:auto;
   background:white;
-  padding:25px;
+  padding:20px;
   border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.1);
 }
 
-h1{
-  text-align:center;
+.login-box{
+  max-width:400px;
+  margin:100px auto;
+  background:white;
+  padding:20px;
+  border-radius:10px;
 }
 
 input{
   width:100%;
-  padding:12px;
-  margin-top:10px;
-  border:1px solid #ccc;
-  border-radius:5px;
+  padding:10px;
+  margin-bottom:10px;
   box-sizing:border-box;
 }
 
 button{
-  width:100%;
-  padding:14px;
-  margin-top:15px;
+  padding:10px;
+  border:none;
   background:black;
   color:white;
-  border:none;
-  border-radius:5px;
-  font-size:16px;
   cursor:pointer;
 }
 
 table{
   width:100%;
-  margin-top:30px;
   border-collapse:collapse;
 }
 
-table th,
-table td{
+th,td{
   border:1px solid #ddd;
   padding:10px;
 }
 
-table th{
+th{
   background:black;
   color:white;
 }
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<div id="loginPage" class="login-box">
+  <h2>Organizer Login</h2>
 
-  <h1>TRSH Raffle</h1>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
 
-  <form id="raffleForm">
-    <input type="text" id="name" placeholder="Name" required>
-    <input type="text" id="surname" placeholder="Surname" required>
-    <input type="text" id="centre" placeholder="Spiritual Centre" required>
+  <button onclick="login()">Login</button>
 
-    <button type="submit">Submit Entry</button>
-  </form>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Surname</th>
-        <th>Spiritual Centre</th>
-      </tr>
-    </thead>
-    <tbody id="raffleTable"></tbody>
-  </table>
-
+  <p id="loginError" style="color:red;"></p>
 </div>
 
+<div id="dashboard" style="display:none;">
+  <div class="container">
+
+    <h1>TRSH Admin Dashboard</h1>
+
+    <p>Total Entries: <span id="totalEntries">0</span></p>
+
+    <input type="text" id="search" placeholder="Search entries...">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Surname</th>
+          <th>Centre</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+
+      <tbody id="entriesTable"></tbody>
+    </table>
+
+  </div>
+</div>
+
+<script>
+const ADMIN_USERNAME = "TRSHAdmin";
+const ADMIN_PASSWORD = "TRSH2026!";
+
+function login(){
+
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  if(
+    username === ADMIN_USERNAME &&
+    password === ADMIN_PASSWORD
+  ){
+
+    sessionStorage.setItem("adminLoggedIn","true");
+
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+
+    location.reload();
+
+  }else{
+
+    document.getElementById("loginError").innerText =
+    "Invalid username or password";
+
+  }
+}
+
+if(sessionStorage.getItem("adminLoggedIn")==="true"){
+  document.getElementById("loginPage").style.display="none";
+  document.getElementById("dashboard").style.display="block";
+}
+</script>
+
 <script type="module">
+
+if(sessionStorage.getItem("adminLoggedIn")!=="true"){
+  throw new Error("Login required");
+}
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 
 import {
   getFirestore,
   collection,
-  addDoc,
-  getDocs
+  getDocs,
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCGoNFcHxWMCOYp7rS3i9SPZ52kb9IDv_g",
+  apiKey: "YOUR_API_KEY",
   authDomain: "trsh-raffle.firebaseapp.com",
   projectId: "trsh-raffle",
   storageBucket: "trsh-raffle.firebasestorage.app",
   messagingSenderId: "415646638643",
-  appId: "1:415646638643:web:35ea07e88f153a35b8f946",
-  measurementId: "G-KB5VD9ZNHG"
+  appId: "1:415646638643:web:35ea07e88f153a35b8f946"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const form = document.getElementById("raffleForm");
-const table = document.getElementById("raffleTable");
+const table = document.getElementById("entriesTable");
+const totalEntries = document.getElementById("totalEntries");
 
-async function loadEntries() {
+let allEntries = [];
 
-  table.innerHTML = "";
+async function loadEntries(){
 
-  const querySnapshot = await getDocs(
-    collection(db, "raffleEntries")
-  );
+  const snapshot = await getDocs(collection(db,"raffleEntries"));
 
-  querySnapshot.forEach((doc) => {
+  allEntries=[];
 
-    const data = doc.data();
+  snapshot.forEach((entry)=>{
+    allEntries.push({
+      id:entry.id,
+      ...entry.data()
+    });
+  });
+
+  renderEntries(allEntries);
+
+  totalEntries.textContent = allEntries.length;
+}
+
+function renderEntries(entries){
+
+  table.innerHTML="";
+
+  entries.forEach((entry)=>{
 
     table.innerHTML += `
-      <tr>
-        <td>${data.name}</td>
-        <td>${data.surname}</td>
-        <td>${data.centre}</td>
-      </tr>
+    <tr>
+      <td>${entry.name}</td>
+      <td>${entry.surname}</td>
+      <td>${entry.centre}</td>
+      <td>
+        <button onclick="deleteEntry('${entry.id}')">
+          Delete
+        </button>
+      </td>
+    </tr>
     `;
   });
 }
 
-loadEntries();
+window.deleteEntry = async(id)=>{
 
-form.addEventListener("submit", async (e) => {
+  if(!confirm("Delete entry?")) return;
 
-  e.preventDefault();
+  await deleteDoc(doc(db,"raffleEntries",id));
 
-  try {
+  loadEntries();
+};
 
-    const name = document.getElementById("name").value;
-    const surname = document.getElementById("surname").value;
-    const centre = document.getElementById("centre").value;
+document.getElementById("search")
+.addEventListener("input",(e)=>{
 
-    await addDoc(
-      collection(db, "raffleEntries"),
-      {
-        name,
-        surname,
-        centre,
-        entryId: "TRSH-" + Date.now(),
-        createdAt: new Date().toISOString()
-      }
-    );
+  const term = e.target.value.toLowerCase();
 
-    await loadEntries();
+  const filtered = allEntries.filter(entry =>
+    entry.name.toLowerCase().includes(term) ||
+    entry.surname.toLowerCase().includes(term) ||
+    entry.centre.toLowerCase().includes(term)
+  );
 
-    form.reset();
-
-    alert("Entry submitted successfully!");
-
-  } catch (error) {
-
-    console.error(error);
-
-    alert("Error: " + error.message);
-  }
+  renderEntries(filtered);
 });
+
+loadEntries();
 
 </script>
 
