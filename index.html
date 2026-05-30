@@ -1,0 +1,168 @@
+<div class="container">
+
+  <h1>TRSH  Raffle</h1>
+
+  <form id="raffleForm">
+
+    <input type="text" id="name" placeholder="Name" required>
+
+    <input type="text" id="surname" placeholder="Surname" required>
+
+    <input type="text" id="centre" placeholder="Spiritual Centre" required>
+
+    <button type="submit">Submit Entry</button>
+
+  </form>
+
+  <table>
+
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Surname</th>
+        <th>Spiritual Centre</th>
+      </tr>
+    </thead>
+
+    <tbody id="raffleTable"></tbody>
+
+  </table>
+
+</div>
+
+<style>
+
+body{
+  font-family: Arial;
+  background:#f4f4f4;
+  padding:20px;
+}.container{
+  max-width:700px;
+  margin:auto;
+  background:white;
+  padding:25px;
+  border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+h1{
+  text-align:center;
+}
+
+input{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:1px solid #ccc;
+  border-radius:5px;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  margin-top:15px;
+  background:black;
+  color:white;
+  border:none;
+  border-radius:5px;
+  font-size:16px;
+}
+table{
+  width:100%;
+  margin-top:30px;
+  border-collapse:collapse;
+}
+
+table th, table td{
+  border:1px solid #ddd;
+  padding:10px;
+}
+
+table th{
+  background:black;
+  color:white;
+}
+</style>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs
+} 
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+  
+const firebaseConfig = {
+  apiKey: "AIzaSyCGoNFcHxWMCOYp7rS3i9SPZ52kb9IDv_g",
+  authDomain: "trsh-raffle.firebaseapp.com",
+  databaseURL: "https://trsh-raffle-default-rtdb.firebaseio.com",
+  projectId: "trsh-raffle",
+  storageBuckect: "trsh-raffle.firebasestorage.app",
+  messagingSenderId: "415646638643",
+  appId: "1:415646638643:web:35ea07e88f153a35b8f946",
+  measurementId: "G-KB5VD9ZNHG"
+};
+const db = getFirestore(app);
+
+const form = document.getElementById("raffleForm");
+
+const table = document.getElementById("raffleTable");
+
+async function loadEntries() {
+
+  table.innerHTML = "";
+
+  const querySnapshot = await getDocs(
+    collection(db, "raffleEntries")
+  );
+
+  querySnapshot.forEach((doc) => {
+
+    const data = doc.data();
+
+    table.innerHTML += `
+      <tr>
+        <td>${data.name}</td>
+        <td>${data.surname}</td>
+        <td>${data.centre}</td>
+      </tr>
+    `;
+  });
+
+}
+
+loadEntries();
+
+form.addEventListener("submit", async (e) => {
+
+  e.preventDefault();
+
+  const name = document.getElementById("name").value;
+
+  const surname = document.getElementById("surname").value;
+
+  const centre = document.getElementById("centre").value;
+
+  await addDoc(
+  collection(db, "raffleEntries"),
+  {
+    name,
+    surname,
+    centre,
+    entryId: "TRSH-" + Date.now(),
+    createdAt: new Date().toISOString()
+  }
+ );
+
+  loadEntries();
+
+  form.reset();
+alert("Entry submitted successfully!");
+
+});
+
+</script>
