@@ -3,149 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TRSH Admin Dashboard</title>
+<title>TRSH Raffle</title>
 
 <style>
 body{
-  font-family:Arial,sans-serif;
+  font-family: Arial, sans-serif;
   background:#f4f4f4;
   padding:20px;
 }
 
 .container{
-  max-width:1000px;
+  max-width:700px;
   margin:auto;
   background:white;
-  padding:20px;
+  padding:25px;
   border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.1);
 }
 
-.login-box{
-  max-width:400px;
-  margin:100px auto;
-  background:white;
-  padding:20px;
-  border-radius:10px;
+h1{
+  text-align:center;
 }
 
 input{
   width:100%;
-  padding:10px;
-  margin-bottom:10px;
+  padding:12px;
+  margin-top:10px;
+  border:1px solid #ccc;
+  border-radius:5px;
   box-sizing:border-box;
 }
 
 button{
-  padding:10px;
-  border:none;
+  width:100%;
+  padding:14px;
+  margin-top:15px;
   background:black;
   color:white;
+  border:none;
+  border-radius:5px;
+  font-size:16px;
   cursor:pointer;
 }
 
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-
-th,td{
-  border:1px solid #ddd;
-  padding:10px;
-}
-
-th{
-  background:black;
-  color:white;
+.success{
+  text-align:center;
+  color:green;
+  margin-top:15px;
+  font-weight:bold;
 }
 </style>
 </head>
+
 <body>
 
-<div id="loginPage" class="login-box">
-  <h2>Organizer Login</h2>
+<div class="container">
 
-  <input type="text" id="username" placeholder="Username">
-  <input type="password" id="password" placeholder="Password">
+  <h1>TRSH Raffle</h1>
 
-  <button onclick="login()">Login</button>
+  <form id="raffleForm">
 
-  <p id="loginError" style="color:red;"></p>
+    <input type="text" id="name" placeholder="Name" required>
+
+    <input type="text" id="surname" placeholder="Surname" required>
+
+    <input type="text" id="centre" placeholder="Spiritual Centre" required>
+
+    <button type="submit">Submit Entry</button>
+
+  </form>
+
+  <div id="message" class="success"></div>
+
 </div>
-
-<div id="dashboard" style="display:none;">
-  <div class="container">
-
-    <h1>TRSH Admin Dashboard</h1>
-
-    <p>Total Entries: <span id="totalEntries">0</span></p>
-
-    <input type="text" id="search" placeholder="Search entries...">
-
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Surname</th>
-          <th>Centre</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-
-      <tbody id="entriesTable"></tbody>
-    </table>
-
-  </div>
-</div>
-
-<script>
-const ADMIN_USERNAME = "TRSHAdmin";
-const ADMIN_PASSWORD = "TRSH2026!";
-
-function login(){
-
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-
-  if(
-    username === ADMIN_USERNAME &&
-    password === ADMIN_PASSWORD
-  ){
-
-    sessionStorage.setItem("adminLoggedIn","true");
-
-    document.getElementById("loginPage").style.display="none";
-    document.getElementById("dashboard").style.display="block";
-
-    location.reload();
-
-  }else{
-
-    document.getElementById("loginError").innerText =
-    "Invalid username or password";
-
-  }
-}
-
-if(sessionStorage.getItem("adminLoggedIn")==="true"){
-  document.getElementById("loginPage").style.display="none";
-  document.getElementById("dashboard").style.display="block";
-}
-</script>
 
 <script type="module">
-
-if(sessionStorage.getItem("adminLoggedIn")!=="true"){
-  throw new Error("Login required");
-}
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 
 import {
   getFirestore,
   collection,
-  getDocs,
-  deleteDoc,
-  doc
+  addDoc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -154,80 +93,48 @@ const firebaseConfig = {
   projectId: "trsh-raffle",
   storageBucket: "trsh-raffle.firebasestorage.app",
   messagingSenderId: "415646638643",
-  appId: "1:415646638643:web:35ea07e88f153a35b8f946"
+  appId: "1:415646638643:web:35ea07e88f153a35b8f946",
+  measurementId: "G-KB5VD9ZNHG"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const table = document.getElementById("entriesTable");
-const totalEntries = document.getElementById("totalEntries");
+const form = document.getElementById("raffleForm");
 
-let allEntries = [];
+form.addEventListener("submit", async (e) => {
 
-async function loadEntries(){
+  e.preventDefault();
 
-  const snapshot = await getDocs(collection(db,"raffleEntries"));
+  try {
 
-  allEntries=[];
+    const name = document.getElementById("name").value;
+    const surname = document.getElementById("surname").value;
+    const centre = document.getElementById("centre").value;
 
-  snapshot.forEach((entry)=>{
-    allEntries.push({
-      id:entry.id,
-      ...entry.data()
-    });
-  });
+    await addDoc(
+      collection(db, "raffleEntries"),
+      {
+        name,
+        surname,
+        centre,
+        entryId: "TRSH-" + Date.now(),
+        createdAt: new Date().toISOString()
+      }
+    );
 
-  renderEntries(allEntries);
+    form.reset();
 
-  totalEntries.textContent = allEntries.length;
-}
+    document.getElementById("message").innerText =
+      "Entry submitted successfully!";
 
-function renderEntries(entries){
+  } catch (error) {
 
-  table.innerHTML="";
+    alert("Error: " + error.message);
 
-  entries.forEach((entry)=>{
+  }
 
-    table.innerHTML += `
-    <tr>
-      <td>${entry.name}</td>
-      <td>${entry.surname}</td>
-      <td>${entry.centre}</td>
-      <td>
-        <button onclick="deleteEntry('${entry.id}')">
-          Delete
-        </button>
-      </td>
-    </tr>
-    `;
-  });
-}
-
-window.deleteEntry = async(id)=>{
-
-  if(!confirm("Delete entry?")) return;
-
-  await deleteDoc(doc(db,"raffleEntries",id));
-
-  loadEntries();
-};
-
-document.getElementById("search")
-.addEventListener("input",(e)=>{
-
-  const term = e.target.value.toLowerCase();
-
-  const filtered = allEntries.filter(entry =>
-    entry.name.toLowerCase().includes(term) ||
-    entry.surname.toLowerCase().includes(term) ||
-    entry.centre.toLowerCase().includes(term)
-  );
-
-  renderEntries(filtered);
 });
-
-loadEntries();
 
 </script>
 
